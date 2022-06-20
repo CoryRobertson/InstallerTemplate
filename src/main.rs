@@ -1,9 +1,15 @@
+use std::borrow::Borrow;
 use std::fs;
+use std::fs::File;
 use std::io;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use eframe::egui;
-use egui::Vec2;
+use egui::{TextBuffer, Vec2};
 
 fn main() {
+
+
 
     let mut options = eframe::NativeOptions::default();
 
@@ -15,13 +21,28 @@ fn main() {
         Box::new(|_cc| Box::new(MyApp::default())),
     );
 
-
-
-
 }
 
-fn extract() {
-    let file_name = String::from("./test.zip");
+fn download(output_name: &str) {
+    let url = String::from("https://github.com/CoryRobertson/ThumbnailExtractor/releases/download/v1.1/ThumbnailExtractor-1.0-SNAPSHOT.zip");
+    // let save_file_path = "temp.zip";
+    let resp = reqwest::blocking::get(url).expect("request failed");
+    let body = resp.bytes().expect("body invalid");
+    let mut out = File::create(output_name).expect("failed to create file");
+    let mut body_bytes= body.to_vec();
+    io::copy(&mut &body_bytes[..], &mut out).expect("failed to copy content");
+}
+
+fn download_with_url(url: &str, output_name: &str) {
+    let resp = reqwest::blocking::get(url).expect("request failed");
+    let body = resp.bytes().expect("body invalid");
+    let mut out = File::create(output_name).expect("failed to create file");
+    let mut body_bytes= body.to_vec();
+    io::copy(&mut &body_bytes[..], &mut out).expect("failed to copy content");
+}
+
+fn extract(file_name: &str) {
+    // let file_name = String::from("./test.zip");
 
     let output_directory = "./test/";
 
@@ -39,8 +60,9 @@ fn extract() {
         // directory output modification
         // println!("{:?}", outpath);
         let dirs = outpath.parent().unwrap();
-        outpath = dirs.join(output_directory).join(file.enclosed_name().unwrap()); // ty stack overflow <3
-        // println!("{:?}", outpath);
+        // outpath = dirs.join(output_directory).join(file.enclosed_name().unwrap()); // ty stack overflow <3
+        outpath = PathBuf::from(output_directory).join(file.enclosed_name().unwrap()); // ty stack overflow <3
+        println!("{:?}", outpath);
 
         {
             let comment = file.comment();
@@ -101,8 +123,13 @@ impl eframe::App for MyApp {
             // ui.label(format!("Hello '{}', age {}", self.name, self.age));
 
             ui.heading("Installer Template!");
+
+            if ui.button("Click to download").clicked() {
+                download("./test2.zip");
+            }
+
             if ui.button("Click to extract").clicked() {
-                extract();
+                extract("./test2.zip");
             }
         });
     }
