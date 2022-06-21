@@ -1,20 +1,17 @@
-use std::borrow::Borrow;
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::thread::sleep;
-use std::time::Duration;
+use std::path::{PathBuf};
 use eframe::egui;
-use egui::{Response, TextBuffer, Vec2};
-use tokio::runtime::Runtime;
+use egui::{Color32, Pos2, Vec2};
 
 fn main() {
 
     let mut options = eframe::NativeOptions::default();
 
     options.initial_window_size = Option::from(Vec2::new(300 as f32,300 as f32));
+
+    options.resizable = false;
 
     eframe::run_native(
         "installer template",
@@ -34,17 +31,17 @@ fn download(output_name: &str) {
     // let mut out = File::create(output_name).expect("failed to create file");
 
     let mut out = File::create(output_name).expect("failed to create file");
-    let mut body_bytes= body.to_vec();
+    let body_bytes= body.to_vec();
     io::copy(&mut &body_bytes[..], &mut out).expect("failed to copy content");
 }
 
 
 // this function downloads a file off the internet and saves it as a given name
-fn download_with_url(url: &str, output_name: &str) {
+fn _download_with_url(url: &str, output_name: &str) {
     let resp = reqwest::blocking::get(url).expect("request failed");
     let body = resp.bytes().expect("body invalid");
     let mut out = File::create(output_name).expect("failed to create file");
-    let mut body_bytes = body.to_vec();
+    let body_bytes = body.to_vec();
     io::copy(&mut &body_bytes[..], &mut out).expect("failed to copy content");
 }
 
@@ -67,7 +64,7 @@ fn extract(file_name: &str, output_directory: &str) {
 
         // directory output modification
         // println!("{:?}", outpath);
-        let dirs = outpath.parent().unwrap();
+        let _dirs = outpath.parent().unwrap();
         // outpath = dirs.join(output_directory).join(file.enclosed_name().unwrap()); // ty stack overflow <3
         outpath = PathBuf::from(output_directory).join(file.enclosed_name().unwrap()); // ty stack overflow <3
         println!("{:?}", outpath);
@@ -104,6 +101,7 @@ fn extract(file_name: &str, output_directory: &str) {
 struct MyApp {
     path: PathBuf,
     path_text: String,
+    frames: u128,
 }
 
 impl Default for MyApp {
@@ -112,6 +110,7 @@ impl Default for MyApp {
             // default paths for file to extract to
             path: PathBuf::from("./test/"),
             path_text: String::from("./test/"),
+            frames: 0,
         }
     }
 }
@@ -121,21 +120,28 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
 
-            // ui.heading("My egui Application");
-            // ui.horizontal(|ui| {
-            //     ui.label("Your name: ");
-            //     ui.text_edit_singleline(&mut self.path_text);
-            // });
-            // ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
-            // if ui.button("Click each year").clicked() {
-            //     self.age += 1;
-            // }
-            // ui.label(format!("Hello '{}', age {}", self.name, self.age));
 
             ui.heading("Installer Template!");
 
 
+            // let time = std::time::SystemTime::now();
+            // let since = time.duration_since(UNIX_EPOCH).unwrap();
+            //
+            // let x = since.as_millis() % 300;
 
+            // circle animation thingy :)
+            let x: f32 = ((self.frames as f32 / 100.0).sin() * 100.0) + 150.0;
+            let y: f32 = ((self.frames as f32 / 100.0).cos() * 100.0) + 150.0;
+
+            // various prime number divisions so we get slightly uneven changes :) felt pretty smart about this one even though its not very good
+            let color_x: f32 = ((self.frames as f32 /101.0).sin() * 255.0).abs();
+            let color_y: f32 = ((self.frames as f32 /157.0).cos() * 255.0).abs();
+            let color_z: f32 = ((self.frames as f32 /197.0).tan() * 255.0).abs();
+            let radius: f32 = ((self.frames as f32 / 293.0).sin() * 50.0).abs();
+
+            ui.painter().circle_filled(Pos2::new(x, y), radius, Color32::from_rgb(color_x as u8, color_y as u8, color_z as u8));
+            ctx.request_repaint(); // refresh ui on every chance possible so we can show the sick animation :)
+            println!("r{} g{} b{}", color_x as u8, color_y as u8, color_z as u8);
 
             if ui.button("Click to download").clicked() {
 
@@ -169,7 +175,7 @@ impl eframe::App for MyApp {
                         // self.path = PathBuf::from(&self.path_text);
                         p
                     },
-                    Err(e) => {
+                    Err(_) => {
                         // println!("{}", e.to_string())
                         PathBuf::from("./")
                     },
@@ -192,7 +198,7 @@ impl eframe::App for MyApp {
                 println!("{}", self.path.display());
 
             }
-
+            self.frames += 1;
 
         });
     }
