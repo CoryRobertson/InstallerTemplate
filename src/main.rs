@@ -1,7 +1,9 @@
-use std::fs;
+use std::{fs, thread};
 use std::fs::File;
 use std::io;
 use std::path::{PathBuf};
+use std::thread::{JoinHandle, sleep};
+use std::time::Duration;
 use eframe::egui;
 use egui::{Color32, Pos2, Vec2};
 
@@ -120,14 +122,7 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
 
-
             ui.heading("Installer Template!");
-
-
-            // let time = std::time::SystemTime::now();
-            // let since = time.duration_since(UNIX_EPOCH).unwrap();
-            //
-            // let x = since.as_millis() % 300;
 
             // circle animation thingy :)
             let x: f32 = ((self.frames as f32 / 100.0).sin() * 100.0) + 150.0;
@@ -141,32 +136,9 @@ impl eframe::App for MyApp {
 
             ui.painter().circle_filled(Pos2::new(x, y), radius, Color32::from_rgb(color_x as u8, color_y as u8, color_z as u8));
             ctx.request_repaint(); // refresh ui on every chance possible so we can show the sick animation :)
-            println!("r{} g{} b{}", color_x as u8, color_y as u8, color_z as u8);
+            // println!("r{} g{} b{}", color_x as u8, color_y as u8, color_z as u8);
 
-            if ui.button("Click to download").clicked() {
-
-                download("./test2.zip");
-
-            }
-
-            if ui.button("Click to extract").clicked() {
-                match File::open("./test2.zip") {
-                    Ok(_) => {
-                        extract("./test2.zip", &self.path_text);
-                        fs::remove_file("./test2.zip").expect("Unable to delete zip file");
-                    }
-                    Err(e) => {println!("Zip file not found. {}", e.to_string());}
-                };
-
-            }
-
-            //TODO: make a button that also sets the program up, either through gradle or building it, then give template functions for simple build tools to run such as gradle
-
-            // let btn1 = ui.button("test");
-            //
-            // if btn1.clicked() {
-            //     println!("{}", self.path.display());
-            // }
+            //ui.painter().rect(Rect::from_min_max(Pos2::new(20.0,250.0), Pos2::new(280.0, 280.0)), Rounding::from(4.0), Color32::from_rgb(40, 70, 120), Stroke::default());
 
             ui.horizontal(|ui| {
                 ui.label("Path to install to: ");
@@ -189,19 +161,64 @@ impl eframe::App for MyApp {
                 // set the path to the new path written in by the user
             });
 
-            if ui.button("Print path to console").clicked() {
-                match fs::create_dir_all(PathBuf::from(&self.path_text)) {
-                    Ok(a) => {a}
-                    Err(e) => {
-                        eprintln!("{}", e.to_string());
+            // if ui.button("Print path to console").clicked() {
+            //     set_and_make_directory(&self.path_text);
+            //     println!("{}", self.path.display());
+            //
+            // }
 
-                    }
-                };
-                println!("{}", self.path.display());
+            if ui.button("Install program").clicked() {
+                // self.progress = 0.0;
+                // set_and_make_directory(&self.path_text);
+                // self.progress = 1.0/3.0;
+                // download("./test2.zip");
+                // self.progress = 2.0/3.0;
+                // check_and_extract(&self.path_text);
+                // self.progress = 1.0;
+                install_program_on_thread(&self.path_text);
+                // self.progress = *t1.1;
 
             }
             self.frames += 1;
 
         });
     }
+}
+
+fn install_program_on_thread(path_text: &String) -> JoinHandle<()> {
+    let pt= path_text.clone();
+
+    thread::spawn(|| {
+        let pt2 = pt;
+
+        set_and_make_directory(&pt2);
+        sleep(Duration::from_secs(2));
+
+        download("./test2.zip");
+        sleep(Duration::from_secs(2));
+
+        check_and_extract(&pt2);
+        sleep(Duration::from_secs(2));
+    })
+}
+
+fn set_and_make_directory(path_text: &String) {
+    match fs::create_dir_all(PathBuf::from(path_text)) {
+        Ok(a) => {a}
+        Err(e) => {
+            eprintln!("{}", e.to_string());
+
+        }
+    };
+}
+
+fn check_and_extract(path_text: &String) {
+    match File::open("./test2.zip") {
+        Ok(_) => {
+            // if the file exists, we extract it, then remove it
+            extract("./test2.zip", path_text);
+            fs::remove_file("./test2.zip").expect("Unable to delete zip file");
+        }
+        Err(e) => {println!("Zip file not found. {}", e.to_string());}
+    };
 }
