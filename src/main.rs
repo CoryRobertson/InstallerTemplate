@@ -160,6 +160,8 @@ impl eframe::App for MyApp {
 
             }
 
+            //TODO: make a button that also sets the program up, either through gradle or building it, then give template functions for simple build tools to run such as gradle
+
             // let btn1 = ui.button("test");
             //
             // if btn1.clicked() {
