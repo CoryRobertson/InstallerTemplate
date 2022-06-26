@@ -5,9 +5,21 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[profile.dev]
+opt-level = 0
+lto = false
+
+[profile.release]
+overflow-checks = true
+opt-level = 3
+strip = true
+debug-assertions = false
+lto = true
+
 [dependencies]
 zip = "0.6.2"
 egui = "0.18.1"
 eframe = "0.18.0"
 reqwest = {version = "0.11.10", features = ["blocking"]}
+#winapi = {version = "0.3", features = ["wincon", "winuser"]}
 #tokio = {version = "0.3.7", features = ["full"] }

@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use std::{fs, thread};
 use std::fs::File;
 use std::io;
@@ -7,7 +9,6 @@ use eframe::egui;
 use egui::{Color32, Pos2, Vec2};
 
 fn main() {
-
     let mut options = eframe::NativeOptions::default();
 
     options.initial_window_size = Option::from(Vec2::new(300 as f32,300 as f32));
@@ -23,22 +24,24 @@ fn main() {
 }
 
 // this function downloads a fixed url, for the purpose of hard coding the location to get the file from.
-fn download(output_name: &str) {
+// fn _download(output_name: &str) {
+//
+//     let url = String::from("https://github.com/CoryRobertson/ThumbnailExtractor/releases/download/v1.1/ThumbnailExtractor-1.0-SNAPSHOT.zip");
+//     // let save_file_path = "temp.zip";
+//     let resp = reqwest::blocking::get(url).expect("request failed");
+//     let body = resp.bytes().expect("body invalid");
+//     // let mut out = File::create(output_name).expect("failed to create file");
+//
+//     let mut out = File::create(output_name).expect("failed to create file");
+//     let body_bytes= body.to_vec();
+//     io::copy(&mut &body_bytes[..], &mut out).expect("failed to copy content");
+// }
 
-    let url = String::from("https://github.com/CoryRobertson/ThumbnailExtractor/releases/download/v1.1/ThumbnailExtractor-1.0-SNAPSHOT.zip");
-    // let save_file_path = "temp.zip";
-    let resp = reqwest::blocking::get(url).expect("request failed");
-    let body = resp.bytes().expect("body invalid");
-    // let mut out = File::create(output_name).expect("failed to create file");
 
-    let mut out = File::create(output_name).expect("failed to create file");
-    let body_bytes= body.to_vec();
-    io::copy(&mut &body_bytes[..], &mut out).expect("failed to copy content");
-}
-
-
-// this function downloads a file off the internet and saves it as a given name
-fn _download_with_url(url: &str, output_name: &str) {
+/**
+Downloads a file off the internet with given url and saves it as a given name
+**/
+fn download_with_url(url: &str, output_name: &str) {
     let resp = reqwest::blocking::get(url).expect("request failed");
     let body = resp.bytes().expect("body invalid");
     let mut out = File::create(output_name).expect("failed to create file");
@@ -46,7 +49,9 @@ fn _download_with_url(url: &str, output_name: &str) {
     io::copy(&mut &body_bytes[..], &mut out).expect("failed to copy content");
 }
 
-// this function extracts given filename of a zip file to a specific output directory
+/**
+Extracts given filename of a zip file to a specific output directory
+**/
 fn extract(file_name: &str, output_directory: &str) {
     // let file_name = String::from("./test.zip");
 
@@ -184,6 +189,9 @@ impl eframe::App for MyApp {
     }
 }
 
+/**
+Runs the installer on a seperate thread so the gui can still be updated while its installing.
+**/
 fn install_program_on_thread(path_text: &String) -> JoinHandle<()> {
     let pt= path_text.clone();
 
@@ -192,12 +200,17 @@ fn install_program_on_thread(path_text: &String) -> JoinHandle<()> {
 
         set_and_make_directory(&pt2);
 
-        download("./test2.zip");
+        // download("./test2.zip");
+
+        download_with_url("https://github.com/CoryRobertson/ThumbnailExtractor/releases/download/v1.1/ThumbnailExtractor-1.0-SNAPSHOT.zip","./test2.zip");
 
         check_and_extract(&pt2);
     })
 }
 
+/**
+Creates all directories needed for the given path to be functional.
+*/
 fn set_and_make_directory(path_text: &String) {
     match fs::create_dir_all(PathBuf::from(path_text)) {
         Ok(a) => {a}
@@ -208,6 +221,9 @@ fn set_and_make_directory(path_text: &String) {
     };
 }
 
+/**
+Checks that a given path exists and that a zip exists to extract to, also removes the archive after it completes extraction.
+**/
 fn check_and_extract(path_text: &String) {
     match File::open("./test2.zip") {
         Ok(_) => {
