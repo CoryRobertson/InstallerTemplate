@@ -2,8 +2,7 @@ use std::{fs, thread};
 use std::fs::File;
 use std::io;
 use std::path::{PathBuf};
-use std::thread::{JoinHandle, sleep};
-use std::time::Duration;
+use std::thread::{JoinHandle};
 use eframe::egui;
 use egui::{Color32, Pos2, Vec2};
 
@@ -192,13 +191,10 @@ fn install_program_on_thread(path_text: &String) -> JoinHandle<()> {
         let pt2 = pt;
 
         set_and_make_directory(&pt2);
-        sleep(Duration::from_secs(2));
 
         download("./test2.zip");
-        sleep(Duration::from_secs(2));
 
         check_and_extract(&pt2);
-        sleep(Duration::from_secs(2));
     })
 }
 
