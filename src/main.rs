@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod testing;
+
 use std::{fs, thread};
 use std::fs::File;
 use std::io;
