@@ -59,7 +59,7 @@ fn extract(file_name: &str, output_directory: &str) {
 
     // let output_directory = "./test/";
 
-    let file = fs::File::open(&file_name).unwrap();
+    let file = File::open(&file_name).unwrap();
 
     let mut archive = zip::ZipArchive::new(file).unwrap();
 
@@ -100,7 +100,7 @@ fn extract(file_name: &str, output_directory: &str) {
                     fs::create_dir_all(&p).unwrap();
                 }
             }
-            let mut outfile = fs::File::create(&outpath).unwrap();
+            let mut outfile = File::create(&outpath).unwrap();
             io::copy(&mut file, &mut outfile).unwrap();
         }
     }
@@ -110,6 +110,7 @@ struct MyApp {
     path: PathBuf,
     path_text: String,
     frames: u128,
+    installer_thread_handle_option: Option<JoinHandle<()>>,
 }
 
 impl Default for MyApp {
@@ -119,6 +120,7 @@ impl Default for MyApp {
             path: PathBuf::from("./test/"),
             path_text: String::from("./test/"),
             frames: 0,
+            installer_thread_handle_option: None
         }
     }
 }
@@ -127,7 +129,6 @@ impl eframe::App for MyApp {
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-
             ui.heading("Installer Template!");
 
             // circle animation thingy :)
@@ -135,9 +136,9 @@ impl eframe::App for MyApp {
             let y: f32 = ((self.frames as f32 / 100.0).cos() * 100.0) + 150.0;
 
             // various prime number divisions so we get slightly uneven changes :) felt pretty smart about this one even though its not very good
-            let color_x: f32 = ((self.frames as f32 /101.0).sin() * 255.0).abs();
-            let color_y: f32 = ((self.frames as f32 /157.0).cos() * 255.0).abs();
-            let color_z: f32 = ((self.frames as f32 /197.0).tan() * 255.0).abs();
+            let color_x: f32 = ((self.frames as f32 / 101.0).sin() * 255.0).abs();
+            let color_y: f32 = ((self.frames as f32 / 157.0).cos() * 255.0).abs();
+            let color_z: f32 = ((self.frames as f32 / 197.0).tan() * 255.0).abs();
             let radius: f32 = ((self.frames as f32 / 293.0).sin() * 50.0).abs();
 
             ui.painter().circle_filled(Pos2::new(x, y), radius, Color32::from_rgb(color_x as u8, color_y as u8, color_z as u8));
@@ -152,17 +153,14 @@ impl eframe::App for MyApp {
 
                 let new_path_check = match PathBuf::from(&self.path_text).canonicalize() {
                     Ok(p) => {
-                        // self.path = PathBuf::from(&self.path_text);
                         p
                     },
                     Err(_) => {
-                        // println!("{}", e.to_string())
                         PathBuf::from("./")
                     },
                 };
                 if path_bar.changed() {
                     self.path = new_path_check;
-                    // println!("path bar changed to: {}", &self.path_text);
                 }
                 // set the path to the new path written in by the user
             });
@@ -174,17 +172,24 @@ impl eframe::App for MyApp {
             // }
 
             if ui.button("Install program").clicked() {
-                // self.progress = 0.0;
-                // set_and_make_directory(&self.path_text);
-                // self.progress = 1.0/3.0;
-                // download("./test2.zip");
-                // self.progress = 2.0/3.0;
-                // check_and_extract(&self.path_text);
-                // self.progress = 1.0;
-                install_program_on_thread(&self.path_text);
-                // self.progress = *t1.1;
 
+                let t1: JoinHandle<()> = install_program_on_thread(&self.path_text);
+                self.installer_thread_handle_option = Some(t1);
             }
+
+            // add ui spinner depending on if the thread optional contains a thread handle, and if its done or not.
+            if self.installer_thread_handle_option.is_some() {
+                if self.installer_thread_handle_option.as_ref().unwrap().is_finished() {
+
+                    // self.installer_thread_handle_option = None;
+                    ui.label("Installation complete.");
+                } else {
+
+                    ui.spinner();
+
+                }
+            }
+
             self.frames += 1;
 
         });
@@ -192,7 +197,7 @@ impl eframe::App for MyApp {
 }
 
 /**
-Runs the installer on a seperate thread so the gui can still be updated while its installing.
+Runs the installer on a separate thread so the gui can still be updated while its installing.
 **/
 fn install_program_on_thread(path_text: &String) -> JoinHandle<()> {
     let pt= path_text.clone();
